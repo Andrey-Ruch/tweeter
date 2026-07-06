@@ -1,6 +1,6 @@
 import "@mantine/core/styles.css";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Container, MantineProvider, Stack, Title } from "@mantine/core";
 
 import CreateTweet from "./components/CreateTweet";
@@ -19,9 +19,8 @@ export default function App() {
   }
 
   // Sort descending (newest first) so the order holds even for stored tweets.
-  const sortedTweets = useMemo(
-    () => [...tweets].sort((a, b) => new Date(b.date) - new Date(a.date)),
-    [tweets],
+  const sortedTweets = tweets.sort(
+    (a, b) => new Date(b.date) - new Date(a.date),
   );
 
   return (
