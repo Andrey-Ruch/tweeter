@@ -22,6 +22,7 @@ export default function CreateTweet({ onCreate, submitting }) {
       setContent(""); // clear only on success so a failed post keeps the draft
     } catch {
       // Error is surfaced by the parent; keep the draft for retry.
+      console.error("Failed to create tweet");
     }
   }
 
