@@ -3,24 +3,26 @@ import { Button, Group, Paper, Stack, Text, Textarea } from "@mantine/core";
 
 import { DEFAULT_USERNAME, MAX_TWEET_LENGTH } from "../lib/constants";
 
-export default function CreateTweet({ onCreate }) {
+export default function CreateTweet({ onCreate, submitting }) {
   const [content, setContent] = useState("");
 
   const trimmed = content.trim();
   const isOverLimit = content.length > MAX_TWEET_LENGTH;
   const canSubmit = trimmed.length > 0 && !isOverLimit;
 
-  function handleSubmit() {
-    if (!canSubmit) return;
+  async function handleSubmit() {
+    if (!canSubmit || submitting) return;
 
-    onCreate({
-      id: crypto.randomUUID(),
-      content: trimmed,
-      userName: DEFAULT_USERNAME,
-      date: new Date().toISOString(),
-    });
-
-    setContent("");
+    try {
+      await onCreate({
+        content: trimmed,
+        userName: DEFAULT_USERNAME,
+        date: new Date().toISOString(),
+      });
+      setContent(""); // clear only on success so a failed post keeps the draft
+    } catch {
+      // Error is surfaced by the parent; keep the draft for retry.
+    }
   }
 
   return (
@@ -41,7 +43,11 @@ export default function CreateTweet({ onCreate }) {
             {content.length} / {MAX_TWEET_LENGTH}
           </Text>
 
-          <Button onClick={handleSubmit} disabled={!canSubmit}>
+          <Button
+            onClick={handleSubmit}
+            disabled={!canSubmit || submitting}
+            loading={submitting}
+          >
             Tweet
           </Button>
         </Group>

@@ -1,35 +1,79 @@
 import "@mantine/core/styles.css";
 
 import { useEffect, useState } from "react";
-import { Container, MantineProvider, Stack, Title } from "@mantine/core";
+import {
+  Alert,
+  Center,
+  Container,
+  Loader,
+  MantineProvider,
+  Stack,
+  Title,
+} from "@mantine/core";
 
 import CreateTweet from "./components/CreateTweet";
 import TweetList from "./components/TweetList";
-import { loadTweets, saveTweets } from "./lib/storage";
+import { createTweet, getTweets } from "./lib/api";
 
 export default function App() {
-  const [tweets, setTweets] = useState(loadTweets);
+  const [tweets, setTweets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [posting, setPosting] = useState(false);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    saveTweets(tweets);
-  }, [tweets]);
-
-  function addTweet(tweet) {
-    setTweets((prev) => [tweet, ...prev]);
+  async function loadTweets() {
+    const data = await getTweets();
+    setTweets(data);
   }
 
-  // Sort descending (newest first) so the order holds even for stored tweets.
-  const sortedTweets = tweets.sort(
-    (a, b) => new Date(b.date) - new Date(a.date),
-  );
+  useEffect(() => {
+    getTweets()
+      .then((data) => setTweets(data))
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleCreate(tweet) {
+    setPosting(true);
+    setError(null);
+
+    try {
+      await createTweet(tweet);
+      await loadTweets();
+    } catch (err) {
+      setError(err.message);
+      throw err; // let CreateTweet keep the draft on failure
+    } finally {
+      setPosting(false);
+    }
+  }
 
   return (
     <MantineProvider>
       <Container size="sm" py="xl">
         <Stack gap="lg">
           <Title order={1}>Tweeter</Title>
-          <CreateTweet onCreate={addTweet} />
-          <TweetList tweets={sortedTweets} />
+
+          {error && (
+            <Alert
+              color="red"
+              title="Something went wrong"
+              withCloseButton
+              onClose={() => setError(null)}
+            >
+              {error}
+            </Alert>
+          )}
+
+          <CreateTweet onCreate={handleCreate} submitting={posting} />
+
+          {loading ? (
+            <Center py="xl">
+              <Loader />
+            </Center>
+          ) : (
+            <TweetList tweets={tweets} />
+          )}
         </Stack>
       </Container>
     </MantineProvider>
